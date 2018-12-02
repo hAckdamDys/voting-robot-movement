@@ -1,0 +1,29 @@
+
+
+<html>
+
+<head>
+    <LINK href="main.css" rel="stylesheet" type="text/css">
+    <title>{{ .Page.Title }}</title>
+</head>
+
+<body onload="reloadData()">
+
+<div id="container">
+    <span id="question">What direction?</span>
+    <div><span id="forward-val">0</span><a href="">Vote</a>Forward</div>
+    <div><span id="backward-val">0</span><a href="">Vote</a>Backward</div>
+    <div><span id="left-val">0</span><a href="">Vote</a>Turn Left</div>
+    <div><span id="right-val">0</span><a href="">Vote</a>Turn Right</div>
+</div>
+
+<div id="currentData">
+
+</div>
+
+<script src="/jquery-2.1.1.js">  </script>
+<script src="/app.js">  </script>
+
+</body>
+
+</html>
