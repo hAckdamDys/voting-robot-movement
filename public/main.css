@@ -11,7 +11,16 @@
     font-weight: bold;
     letter-spacing: -3px;
     margin-bottom: 20px;
-    padding: 10px;
+    font-size: 40px;
+}
+#last-command-container {
+    color: #fff;
+    background:#000;
+    display: block;
+    padding: 20px;
+    font-weight: bold;
+    letter-spacing: -3px;
+    margin-bottom: 20px;
     font-size: 40px;
 }
 #container div {
