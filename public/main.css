@@ -1,5 +1,6 @@
 * {
     font-family: Arial, "Free Sans";
+    background:#000;
 }
 #container {
     color: #fff;
@@ -13,7 +14,7 @@
     margin-bottom: 20px;
     font-size: 40px;
 }
-#last-command-container {
+#last-command {
     color: #fff;
     background:#000;
     display: block;
@@ -32,10 +33,15 @@
     font-size: 34px;
     color: #ffffff;
     border-left: 20px solid #333;
-    width: 400px;
+    width: 300px;
+}
+.rounded{
     -webkit-border-radius: 0.5em;
     -moz-border-radius: 0 0.5em 0.5em 0;
     border-radius: 0 1.5em 1.5em 0;
+}
+#container div span{
+    background: #0099cc;
 }
 #container div a {
     border-radius: 0.3em;

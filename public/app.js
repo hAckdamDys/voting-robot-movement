@@ -5,7 +5,8 @@ const urlVotes = '/directions';
 const urlCommand = '/getCommand'
 const urlPost = '/postDirection';
 const reloadCooldownMS = 1000; //cooldown every X milliseconds
-const voteWidth = 15;
+const voteStartWidth = 0;
+const voteWidth = 7;
 
 function reloadData()
 {
@@ -38,7 +39,7 @@ function reloadData()
 function updateCommand(){
     if (req2.readyState === XMLHttpRequest.DONE && req2.status===200)
     {
-        document.getElementById("last-command").innerText=req2.responseText;
+        document.getElementById("last-command").innerText="Last Command: "+req2.responseText;
     }
 }
 
@@ -51,21 +52,12 @@ function updateVotes()
             // Set current data text
             var resText = req.responseText;
             resText = resText.split("|");
-            tmpElem = document.getElementById("idle-val");
-            tmpElem.innerText = resText[0];
-            $(tmpElem).parent().animate({width: (parseInt(resText[0]) * voteWidth + 300) + 'px'});
-            tmpElem = document.getElementById("forward-val");
-            tmpElem.innerText = resText[1];
-            $(tmpElem).parent().animate({width: (parseInt(resText[1]) * voteWidth + 300) + 'px'});
-            tmpElem = document.getElementById("backward-val");
-            tmpElem.innerText = resText[2];
-            $(tmpElem).parent().animate({width: (parseInt(resText[2]) * voteWidth + 300) + 'px'});
-            tmpElem = document.getElementById("left-val");
-            tmpElem.innerText = resText[3];
-            $(tmpElem).parent().animate({width: (parseInt(resText[3]) * voteWidth + 300) + 'px'});
-            tmpElem = document.getElementById("right-val");
-            tmpElem.innerText = resText[4];
-            $(tmpElem).parent().animate({width: (parseInt(resText[4]) * voteWidth + 300) + 'px'});
+            allCommands=["idle-val","forward-val","backward-val","left-val","right-val"];
+            for (i = 0; i < allCommands.length; i++) {
+                tmpElem = document.getElementById(allCommands[i]);
+                tmpElem.innerText = resText[i];
+                $(tmpElem).parent().next().animate({width: (parseInt(resText[i]) * voteWidth + voteStartWidth) + 'px'});
+            }
             timeoutID = setTimeout('reloadData()', reloadCooldownMS);
         }
         else {
@@ -78,6 +70,12 @@ function updateVotes()
 
 
 $(document).ready(function() {
+    $('.no-zoom').bind('touchend', function(e) {
+        e.preventDefault();
+        // Add your code here.
+        $(this).click();
+        // This line still calls the standard click event, in case the user needs to interact with the element that is being clicked on, but still avoids zooming in cases of double clicking.
+    })
     $("#container div a").click(function() {
         try {
             reqPost = new XMLHttpRequest();
@@ -111,4 +109,3 @@ $(document).ready(function() {
         return false;
     });
 });
-

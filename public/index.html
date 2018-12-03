@@ -2,29 +2,33 @@
 
 <html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <head>
-    <LINK href="main.css" rel="stylesheet" type="text/css">
+    <LINK href="main.css?version=2.0" rel="stylesheet" type="text/css">
     <title>{{ .Page.Title }}</title>
 </head>
 
 <body onload="reloadData()">
 
 <div id="container">
-    <span id="question">What to do?</span>
     <div><span id="idle-val">0</span><a href="">Vote</a>Idle</div>
+    <div class="rounded"></div>
     <div><span id="forward-val">0</span><a href="">Vote</a>Forward</div>
+    <div class="rounded"></div>
     <div><span id="backward-val">0</span><a href="">Vote</a>Backward</div>
+    <div class="rounded"></div>
     <div><span id="left-val">0</span><a href="">Vote</a>Turn Left</div>
+    <div class="rounded"></div>
     <div><span id="right-val">0</span><a href="">Vote</a>Turn Right</div>
+    <div class="rounded"></div>
 </div>
-
-<div id="last-command-container">
-    <div id="last-command">idle</div>
+<div id="last-command">
 </div>
 
 <script src="/jquery-2.1.1.js">  </script>
-<script src="/app.js">  </script>
+<script src="/app.js?version=2.0">  </script>
 
 </body>
+
 
 </html>
