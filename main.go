@@ -2,8 +2,11 @@ package main
 
 import (
 	"github.com/kataras/iris"
+	"math"
 	"math/rand"
+	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -20,7 +23,7 @@ func generateVotes(s *SafeCommands) {
 	}
 }
 
-func resetVotes(s *SafeCommands) {
+func resetVotes(s *SafeCommands, waitTime int, stepLoss int) {
 	for {
 		s.mux.Lock()
 		curMax := 0
@@ -34,10 +37,79 @@ func resetVotes(s *SafeCommands) {
 				newCommand = Command(command)
 			}
 		}
-		s.votes = [5]string{"0", "0", "0", "0", "0"}
-		s.lastCommand = newCommand
+		//s.votes = [5]string{"0", "0", "0", "0", "0"}
+		idleVotes, _ := strconv.Atoi(votes[idle])
+		forVotes, _ := strconv.Atoi(votes[forward])
+		backVotes, _ := strconv.Atoi(votes[backward])
+		leftVotes, _ := strconv.Atoi(votes[left])
+		rightVotes, _ := strconv.Atoi(votes[right])
+		s.votes[forward] = strconv.Itoa(int(math.Max(float64(forVotes-stepLoss), 0)))
+		s.votes[backward] = strconv.Itoa(int(math.Max(float64(backVotes-stepLoss), 0)))
+		s.votes[left] = strconv.Itoa(int(math.Max(float64(leftVotes-stepLoss), 0)))
+		s.votes[right] = strconv.Itoa(int(math.Max(float64(rightVotes-stepLoss), 0)))
+		s.votes[idle] = strconv.Itoa(int(math.Max(float64(idleVotes-stepLoss), 0)))
+		s.lastCommand = String(newCommand)
 		s.mux.Unlock()
-		time.Sleep(time.Second * 10)
+		time.Sleep(time.Duration(waitTime) * time.Millisecond)
+	}
+}
+
+func resetVotesAvg(s *SafeCommands, waitTime int, stepLoss int, mult int) {
+	for {
+		s.mux.Lock()
+		//newCommand := "idle" // if no votes then idle
+		leftWheel := 0
+		rightWheel := 0
+		votes := s.votes
+
+		forMat := [2]int{1, 1}
+		backMat := [2]int{-1, -1}
+		leftMat := [2]int{1, -1}
+		rightMat := [2]int{-1, 1}
+		idleMat := [2]int{1, 1} //decrease by that much for each vote must be positive
+		idleVotes, _ := strconv.Atoi(votes[idle])
+
+		forVotes, _ := strconv.Atoi(votes[forward])
+		leftWheel += forMat[0] * forVotes
+		rightWheel += forMat[1] * forVotes
+
+		backVotes, _ := strconv.Atoi(votes[backward])
+		leftWheel += backMat[0] * backVotes
+		rightWheel += backMat[1] * backVotes
+
+		leftVotes, _ := strconv.Atoi(votes[left])
+		leftWheel += leftMat[0] * leftVotes
+		rightWheel += leftMat[1] * leftVotes
+
+		rightVotes, _ := strconv.Atoi(votes[right])
+		leftWheel += rightMat[0] * rightVotes
+		rightWheel += rightMat[1] * rightVotes
+
+		if leftWheel != 0 {
+			if leftWheel > 0 {
+				leftWheel = int(math.Max(float64(leftWheel-idleVotes*idleMat[0]), 0))
+			} else {
+				leftWheel = int(math.Min(float64(leftWheel+idleVotes*idleMat[0]), 0))
+			}
+		}
+
+		if rightWheel != 0 {
+			if rightWheel > 0 {
+				rightWheel = int(math.Max(float64(rightWheel-idleVotes*idleMat[1]), 0))
+			} else {
+				rightWheel = int(math.Min(float64(rightWheel+idleVotes*idleMat[1]), 0))
+			}
+		}
+
+		//s.votes = [5]string{"0", "0", "0", "0", "0"}
+		s.votes[forward] = strconv.Itoa(int(math.Max(float64(forVotes-stepLoss), 0)))
+		s.votes[backward] = strconv.Itoa(int(math.Max(float64(backVotes-stepLoss), 0)))
+		s.votes[left] = strconv.Itoa(int(math.Max(float64(leftVotes-stepLoss), 0)))
+		s.votes[right] = strconv.Itoa(int(math.Max(float64(rightVotes-stepLoss), 0)))
+		s.votes[idle] = strconv.Itoa(int(math.Max(float64(idleVotes-stepLoss), 0)))
+		s.lastCommand = strconv.Itoa(leftWheel*mult) + "|" + strconv.Itoa(rightWheel*mult)
+		s.mux.Unlock()
+		time.Sleep(time.Duration(waitTime) * time.Millisecond)
 	}
 }
 
@@ -81,7 +153,7 @@ func stringToCommand(s string) Command {
 // safe to use concurrently.
 type SafeCommands struct {
 	votes       [5]string // string because it is most often used as get
-	lastCommand Command
+	lastCommand string
 	mux         sync.Mutex
 }
 
@@ -90,15 +162,51 @@ var page = struct {
 }{"Vote Fast!!!"}
 
 func main() {
+	argsWithoutProg := os.Args[1:]
+	port := "8080"
+	isAvgMethod := true
+	waitTime := 2000
+	stepLoss := 10
+	mult := 1
+	for _, arg := range argsWithoutProg {
+		if strings.HasPrefix(arg, "--port") {
+			port = strings.Split(arg, "=")[1]
+		}
+		if strings.HasPrefix(arg, "--method") {
+			arg = strings.Split(arg, "=")[1]
+			if strings.Contains(arg, "avg") {
+				isAvgMethod = true
+			}
+			if strings.Contains(arg, "single") {
+				isAvgMethod = false
+			}
+		}
+		if strings.HasPrefix(arg, "--wait") {
+			arg = strings.Split(arg, "=")[1]
+			waitTime, _ = strconv.Atoi(arg)
+		}
+		if strings.HasPrefix(arg, "--steploss") {
+			arg = strings.Split(arg, "=")[1]
+			stepLoss, _ = strconv.Atoi(arg)
+		}
+		if strings.HasPrefix(arg, "--mult") {
+			arg = strings.Split(arg, "=")[1]
+			mult, _ = strconv.Atoi(arg)
+		}
+	}
+
 	app := iris.New()
 	//app.Logger().SetLevel("debug")
 	app.RegisterView(iris.HTML("public", ".html"))
 
 	//app.Use(recover.New())
 	//app.Use(logger.New())
-
-	commandsToDo := SafeCommands{votes: [5]string{"0", "0", "0", "0", "0"}, lastCommand: idle}
-
+	var commandsToDo SafeCommands
+	if isAvgMethod {
+		commandsToDo = SafeCommands{votes: [5]string{"0", "0", "0", "0", "0"}, lastCommand: "0|0"}
+	} else {
+		commandsToDo = SafeCommands{votes: [5]string{"0", "0", "0", "0", "0"}, lastCommand: "idle"}
+	}
 	app.StaticWeb("/", "public")
 	app.Get("/", func(ctx iris.Context) {
 		ctx.ViewData("Page", page)
@@ -107,7 +215,7 @@ func main() {
 
 	app.Get("/getCommand", func(ctx iris.Context) {
 		//println(commandsToDo.lastCommand)
-		ctx.HTML(String(commandsToDo.lastCommand))
+		ctx.HTML(commandsToDo.lastCommand)
 	})
 
 	app.Post("/postDirection", func(ctx iris.Context) {
@@ -135,6 +243,10 @@ func main() {
 	app.SPA(assetHandler)
 
 	//go generateVotes(&commandsToDo)
-	go resetVotes(&commandsToDo)
-	app.Run(iris.Addr("0.0.0.0:8080"), iris.WithoutServerError(iris.ErrServerClosed))
+	if isAvgMethod {
+		go resetVotesAvg(&commandsToDo, waitTime, stepLoss, mult)
+	} else {
+		go resetVotes(&commandsToDo, waitTime, stepLoss)
+	}
+	app.Run(iris.Addr("0.0.0.0:"+port), iris.WithoutServerError(iris.ErrServerClosed))
 }
