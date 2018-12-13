@@ -115,6 +115,7 @@ func resetVotesAvg(s *SafeCommands, waitTime int, stepLoss int, multSpeed int, m
 
 type Command int
 
+const publicDir = "public";
 const commandSize = 5
 const (
 	idle     Command = 0
@@ -173,8 +174,7 @@ func main() {
 	for _, arg := range argsWithoutProg {
 		if strings.HasPrefix(arg, "--port") {
 			port = strings.Split(arg, "=")[1]
-		}
-		if strings.HasPrefix(arg, "--method") {
+		}else if strings.HasPrefix(arg, "--method") {
 			arg = strings.Split(arg, "=")[1]
 			if strings.Contains(arg, "avg") {
 				isAvgMethod = true
@@ -182,32 +182,44 @@ func main() {
 			if strings.Contains(arg, "single") {
 				isAvgMethod = false
 			}
-		}
-		if strings.HasPrefix(arg, "--wait") {
+		}else if strings.HasPrefix(arg, "--wait") {
 			arg = strings.Split(arg, "=")[1]
 			waitTime, _ = strconv.Atoi(arg)
-		}
-		if strings.HasPrefix(arg, "--steploss") {
+		}else if strings.HasPrefix(arg, "--steploss") {
 			arg = strings.Split(arg, "=")[1]
 			stepLoss, _ = strconv.Atoi(arg)
-		}
-		if strings.HasPrefix(arg, "--multspeed") {
+		}else if strings.HasPrefix(arg, "--multspeed") {
 			arg = strings.Split(arg, "=")[1]
 			multSpeed, _ = strconv.Atoi(arg)
-		}
-		if strings.HasPrefix(arg, "--multsteer") {
+		}else if strings.HasPrefix(arg, "--multsteer") {
 			arg = strings.Split(arg, "=")[1]
 			multSteer, _ = strconv.Atoi(arg)
-		}
-		if strings.HasPrefix(arg, "--multbrake") {
+		}else if strings.HasPrefix(arg, "--multbrake") {
 			arg = strings.Split(arg, "=")[1]
 			multBrake, _ = strconv.Atoi(arg)
+		}else{
+			println("port=what port webserver should run on, default 8080")
+			println("method=one method from below")
+			println("avg -> default method -> changes votes to (left wheel|right wheel) speed, for example left vote = (-1|1) speed")
+			println("forward = (1|1) , backward = (-1|-1)")
+			println("left = (-1|1), right = (1|-1)")
+			println("idle/brake = (+1 towards 0 value | +1 towards 0 value)")
+			println("single -> most voted movement is choosen")
+			println("wait=how many miliseconds between reset/decrease of votes, default 2000")
+			println("steploss=how many votes decreases per every wait period, default 10")
+			println("Multiplication for avg method votes, default 1:")
+			println("multspeed=forward,backward votes become (multspeed|multspeed) (-multspeed|-multspeed)")
+			println("multsteer=left,right votes become (-multsteer|multsteer) (multsteer|-multsteer)")
+			println("multbrake=idle/brake become (+multbrake towards 0 value | +multbrake towards 0 value)")
+			println("Example command with all parameters")
+			println("go run main.go --port=80 --method=avg --wait=3000 --steploss=30 --multspeed=20 --multsteer=30 --multbrake=50")
+			os.Exit(1)
 		}
 	}
 
 	app := iris.New()
 	//app.Logger().SetLevel("debug")
-	app.RegisterView(iris.HTML("public", ".html"))
+	app.RegisterView(iris.HTML(publicDir, ".html"))
 
 	//app.Use(recover.New())
 	//app.Use(logger.New())
@@ -217,7 +229,7 @@ func main() {
 	} else {
 		commandsToDo = SafeCommands{votes: [5]string{"0", "0", "0", "0", "0"}, lastCommand: "idle"}
 	}
-	app.StaticWeb("/", "public")
+	app.StaticWeb("/", publicDir)
 	app.Get("/", func(ctx iris.Context) {
 		ctx.ViewData("Page", page)
 		ctx.View("index.html")
@@ -248,7 +260,7 @@ func main() {
 		ctx.HTML(commandsToDo.votes[0] + "|" + commandsToDo.votes[1] + "|" + commandsToDo.votes[2] + "|" + commandsToDo.votes[3] + "|" + commandsToDo.votes[4])
 		commandsToDo.mux.Unlock()
 	})
-	assetHandler := app.StaticHandler("public", false, false)
+	assetHandler := app.StaticHandler(publicDir, false, false)
 
 	app.SPA(assetHandler)
 
