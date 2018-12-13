@@ -1,15 +1,34 @@
 package main
 
 import (
+	"fmt"
 	"github.com/kataras/iris"
 	"math"
 	"math/rand"
+	"net"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
+
+func printAddressListen(port string){
+	name, err := os.Hostname()
+	if err != nil {
+		fmt.Printf("Could not get hostname: %v\n", err)
+		return
+	}
+	host, err := net.LookupHost(name)
+	if err != nil {
+		fmt.Printf("Oops: %v\n", err)
+		return
+	}
+
+	for _, a := range host {
+		println("Now listening on: http://"+a+":"+port)
+	}
+}
 
 func generateVotes(s *SafeCommands) {
 	for {
@@ -58,35 +77,56 @@ func resetVotesAvg(s *SafeCommands, waitTime int, stepLoss int, multSpeed int, m
 	for {
 		s.mux.Lock()
 		//newCommand := "idle" // if no votes then idle
-		//leftWheel := 0
-		//rightWheel := 0
+		leftWheel := 0
+		rightWheel := 0
 		votes := s.votes
 
-		//forMat := [2]int{multSpeed, multSpeed}
-		//backMat := [2]int{-multSpeed, -multSpeed}
-		//leftMat := [2]int{multSteer, -multSteer}
-		//rightMat := [2]int{-multSteer, multSteer}
-		//idleMat := [2]int{multBrake, multBrake} //decrease by that much for each vote must be positive
+		forMat := [2]int{multSpeed, multSpeed}
+		backMat := [2]int{-multSpeed, -multSpeed}
+		leftMat := [2]int{multSteer, -multSteer}
+		rightMat := [2]int{-multSteer, multSteer}
+		idleMat := [2]int{multBrake, multBrake} //decrease by that much for each vote must be positive
 		idleVotes, _ := strconv.Atoi(votes[idle])
 
-
 		forVotes, _ := strconv.Atoi(votes[forward])
-
+		leftWheel += forMat[0] * forVotes
+		rightWheel += forMat[1] * forVotes
 
 		backVotes, _ := strconv.Atoi(votes[backward])
-
+		leftWheel += backMat[0] * backVotes
+		rightWheel += backMat[1] * backVotes
 
 		leftVotes, _ := strconv.Atoi(votes[left])
-
+		leftWheel += leftMat[0] * leftVotes
+		rightWheel += leftMat[1] * leftVotes
 
 		rightVotes, _ := strconv.Atoi(votes[right])
+		leftWheel += rightMat[0] * rightVotes
+		rightWheel += rightMat[1] * rightVotes
+
+		if leftWheel != 0 {
+			if leftWheel > 0 {
+				leftWheel = int(math.Max(float64(leftWheel-idleVotes*idleMat[0]), 0))
+			} else {
+				leftWheel = int(math.Min(float64(leftWheel+idleVotes*idleMat[0]), 0))
+			}
+		}
+
+		if rightWheel != 0 {
+			if rightWheel > 0 {
+				rightWheel = int(math.Max(float64(rightWheel-idleVotes*idleMat[1]), 0))
+			} else {
+				rightWheel = int(math.Min(float64(rightWheel+idleVotes*idleMat[1]), 0))
+			}
+		}
 
 		//s.votes = [5]string{"0", "0", "0", "0", "0"}
-		s.votes[forward] = strconv.Itoa(int(math.Max(float64(forVotes-stepLoss*multSpeed), 0)))
-		s.votes[backward] = strconv.Itoa(int(math.Max(float64(backVotes-stepLoss*multSpeed), 0)))
-		s.votes[left] = strconv.Itoa(int(math.Max(float64(leftVotes-stepLoss*multSteer), 0)))
-		s.votes[right] = strconv.Itoa(int(math.Max(float64(rightVotes-stepLoss*multSteer), 0)))
-		s.votes[idle] = strconv.Itoa(int(math.Max(float64(idleVotes-stepLoss*multBrake), 0)))
+		s.votes[forward] = strconv.Itoa(int(math.Max(float64(forVotes-stepLoss), 0)))
+		s.votes[backward] = strconv.Itoa(int(math.Max(float64(backVotes-stepLoss), 0)))
+		s.votes[left] = strconv.Itoa(int(math.Max(float64(leftVotes-stepLoss), 0)))
+		s.votes[right] = strconv.Itoa(int(math.Max(float64(rightVotes-stepLoss), 0)))
+		s.votes[idle] = strconv.Itoa(int(math.Max(float64(idleVotes-stepLoss), 0)))
+		s.lastCommand = strconv.Itoa(leftWheel) + "|" + strconv.Itoa(rightWheel)
 		s.mux.Unlock()
 		time.Sleep(time.Duration(waitTime) * time.Millisecond)
 	}
@@ -145,11 +185,11 @@ func main() {
 	argsWithoutProg := os.Args[1:]
 	port := "8080"
 	isAvgMethod := true
-	waitTime := 2000
-	stepLoss := 10
-	multSpeed := 1
-	multSteer := 1
-	multBrake := 1
+	waitTime := 3000
+	stepLoss := 3
+	multSpeed := 3
+	multSteer := 5
+	multBrake := 7
 	for _, arg := range argsWithoutProg {
 		if strings.HasPrefix(arg, "--port") {
 			port = strings.Split(arg, "=")[1]
@@ -195,6 +235,8 @@ func main() {
 			os.Exit(1)
 		}
 	}
+	printAddressListen(port)
+
 
 	app := iris.New()
 	//app.Logger().SetLevel("debug")

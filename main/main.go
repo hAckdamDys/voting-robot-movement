@@ -1,15 +1,34 @@
 package main
 
 import (
+	"fmt"
 	"github.com/kataras/iris"
 	"math"
 	"math/rand"
+	"net"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
+
+func printAddressListen(port string){
+	name, err := os.Hostname()
+	if err != nil {
+		fmt.Printf("Could not get hostname: %v\n", err)
+		return
+	}
+	host, err := net.LookupHost(name)
+	if err != nil {
+		fmt.Printf("Oops: %v\n", err)
+		return
+	}
+
+	for _, a := range host {
+		println("Now listening on: http://"+a+":"+port)
+	}
+}
 
 func generateVotes(s *SafeCommands) {
 	for {
@@ -167,7 +186,7 @@ func main() {
 	port := "8080"
 	isAvgMethod := true
 	waitTime := 2000
-	stepLoss := 10
+	stepLoss := 3
 	multSpeed := 1
 	multSteer := 1
 	multBrake := 1
@@ -216,6 +235,7 @@ func main() {
 			os.Exit(1)
 		}
 	}
+	printAddressListen(port)
 
 	app := iris.New()
 	//app.Logger().SetLevel("debug")
