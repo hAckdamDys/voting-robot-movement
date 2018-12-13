@@ -1,4 +1,4 @@
-package main
+package experimental
 
 import (
 	"github.com/kataras/iris"
@@ -256,7 +256,7 @@ func main() {
 			backVotes, _ := strconv.Atoi(votes[backward])
 			leftWheel += backMat[0] * backVotes
 			rightWheel += backMat[1] * backVotes
-			
+
 			leftVotes, _ := strconv.Atoi(votes[left])
 			leftWheel += leftMat[0] * leftVotes
 			rightWheel += leftMat[1] * leftVotes
@@ -266,28 +266,28 @@ func main() {
 			rightWheel += rightMat[1] * rightVotes
 
 			if leftWheel != 0 {
-			if leftWheel > 0 {
-			    leftWheel = int(math.Max(float64(leftWheel-idleVotes*idleMat[0]), 0))
-			} else {
-		       	       leftWheel = int(math.Min(float64(leftWheel+idleVotes*idleMat[0]), 0))
-			}
+				if leftWheel > 0 {
+					leftWheel = int(math.Max(float64(leftWheel-idleVotes*idleMat[0]), 0))
+				} else {
+					leftWheel = int(math.Min(float64(leftWheel+idleVotes*idleMat[0]), 0))
+				}
 			}
 
 			if rightWheel != 0 {
-			if rightWheel > 0 {
-			rightWheel = int(math.Max(float64(rightWheel-idleVotes*idleMat[1]), 0))
-			} else {
-			rightWheel = int(math.Min(float64(rightWheel+idleVotes*idleMat[1]), 0))
-			}
+				if rightWheel > 0 {
+					rightWheel = int(math.Max(float64(rightWheel-idleVotes*idleMat[1]), 0))
+				} else {
+					rightWheel = int(math.Min(float64(rightWheel+idleVotes*idleMat[1]), 0))
+				}
 			}
 
-//s.votes = [5]string{"0", "0", "0", "0", "0"}
-//s.votes[forward] = strconv.Itoa(int(math.Max(float64(forVotes-stepLoss), 0)))
-//s.votes[backward] = strconv.Itoa(int(math.Max(float64(backVotes-stepLoss), 0)))
-//s.votes[left] = strconv.Itoa(int(math.Max(float64(leftVotes-stepLoss), 0)))
-//s.votes[right] = strconv.Itoa(int(math.Max(float64(rightVotes-stepLoss), 0)))
-//s.votes[idle] = strconv.Itoa(int(math.Max(float64(idleVotes-stepLoss), 0)))
-		commandsToDo.lastCommand = strconv.Itoa(leftWheel) + "|" + strconv.Itoa(rightWheel)
+			//s.votes = [5]string{"0", "0", "0", "0", "0"}
+			//s.votes[forward] = strconv.Itoa(int(math.Max(float64(forVotes-stepLoss), 0)))
+			//s.votes[backward] = strconv.Itoa(int(math.Max(float64(backVotes-stepLoss), 0)))
+			//s.votes[left] = strconv.Itoa(int(math.Max(float64(leftVotes-stepLoss), 0)))
+			//s.votes[right] = strconv.Itoa(int(math.Max(float64(rightVotes-stepLoss), 0)))
+			//s.votes[idle] = strconv.Itoa(int(math.Max(float64(idleVotes-stepLoss), 0)))
+			commandsToDo.lastCommand = strconv.Itoa(leftWheel) + "|" + strconv.Itoa(rightWheel)
 
 		} else {
 			println("invalid command: " + s)

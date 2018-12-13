@@ -54,7 +54,7 @@ func resetVotes(s *SafeCommands, waitTime int, stepLoss int) {
 	}
 }
 
-func resetVotesAvg(s *SafeCommands, waitTime int, stepLoss int, mult int) {
+func resetVotesAvg(s *SafeCommands, waitTime int, stepLoss int, multSpeed int, multSteer int, multBrake int) {
 	for {
 		s.mux.Lock()
 		//newCommand := "idle" // if no votes then idle
@@ -62,11 +62,11 @@ func resetVotesAvg(s *SafeCommands, waitTime int, stepLoss int, mult int) {
 		rightWheel := 0
 		votes := s.votes
 
-		forMat := [2]int{1, 1}
-		backMat := [2]int{-1, -1}
-		leftMat := [2]int{1, -1}
-		rightMat := [2]int{-1, 1}
-		idleMat := [2]int{1, 1} //decrease by that much for each vote must be positive
+		forMat := [2]int{multSpeed, multSpeed}
+		backMat := [2]int{-multSpeed, -multSpeed}
+		leftMat := [2]int{multSteer, -multSteer}
+		rightMat := [2]int{-multSteer, multSteer}
+		idleMat := [2]int{multBrake, multBrake} //decrease by that much for each vote must be positive
 		idleVotes, _ := strconv.Atoi(votes[idle])
 
 		forVotes, _ := strconv.Atoi(votes[forward])
@@ -107,7 +107,7 @@ func resetVotesAvg(s *SafeCommands, waitTime int, stepLoss int, mult int) {
 		s.votes[left] = strconv.Itoa(int(math.Max(float64(leftVotes-stepLoss), 0)))
 		s.votes[right] = strconv.Itoa(int(math.Max(float64(rightVotes-stepLoss), 0)))
 		s.votes[idle] = strconv.Itoa(int(math.Max(float64(idleVotes-stepLoss), 0)))
-		s.lastCommand = strconv.Itoa(leftWheel*mult) + "|" + strconv.Itoa(rightWheel*mult)
+		s.lastCommand = strconv.Itoa(leftWheel) + "|" + strconv.Itoa(rightWheel)
 		s.mux.Unlock()
 		time.Sleep(time.Duration(waitTime) * time.Millisecond)
 	}
@@ -167,7 +167,9 @@ func main() {
 	isAvgMethod := true
 	waitTime := 2000
 	stepLoss := 10
-	mult := 1
+	multSpeed := 1
+	multSteer := 1
+	multBrake := 1
 	for _, arg := range argsWithoutProg {
 		if strings.HasPrefix(arg, "--port") {
 			port = strings.Split(arg, "=")[1]
@@ -189,9 +191,17 @@ func main() {
 			arg = strings.Split(arg, "=")[1]
 			stepLoss, _ = strconv.Atoi(arg)
 		}
-		if strings.HasPrefix(arg, "--mult") {
+		if strings.HasPrefix(arg, "--multspeed") {
 			arg = strings.Split(arg, "=")[1]
-			mult, _ = strconv.Atoi(arg)
+			multSpeed, _ = strconv.Atoi(arg)
+		}
+		if strings.HasPrefix(arg, "--multsteer") {
+			arg = strings.Split(arg, "=")[1]
+			multSteer, _ = strconv.Atoi(arg)
+		}
+		if strings.HasPrefix(arg, "--multbrake") {
+			arg = strings.Split(arg, "=")[1]
+			multBrake, _ = strconv.Atoi(arg)
 		}
 	}
 
@@ -244,7 +254,7 @@ func main() {
 
 	//go generateVotes(&commandsToDo)
 	if isAvgMethod {
-		go resetVotesAvg(&commandsToDo, waitTime, stepLoss, mult)
+		go resetVotesAvg(&commandsToDo, waitTime, stepLoss, multSpeed, multSteer, multBrake)
 	} else {
 		go resetVotes(&commandsToDo, waitTime, stepLoss)
 	}
