@@ -14,19 +14,32 @@ import (
 )
 
 func printAddressListen(port string){
-	name, err := os.Hostname()
+	ifaces, err := net.Interfaces()
+	// handle err
 	if err != nil {
-		fmt.Printf("Could not get hostname: %v\n", err)
+		fmt.Printf("Could not get interface addressess at all: %v\n", err)
 		return
 	}
-	host, err := net.LookupHost(name)
-	if err != nil {
-		fmt.Printf("Oops: %v\n", err)
-		return
-	}
-
-	for _, a := range host {
-		println("Now listening on: http://"+a+":"+port)
+	for _, i := range ifaces {
+		addrs, err := i.Addrs()
+		// handle err
+		if err != nil {
+			fmt.Printf("Could not get interface"+i.Name+" addressess: %v\n", err)
+			return
+		}
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			// process IP address
+			if (!strings.Contains(ip.String(),":")  &&  !(ip.String()=="localhost") &&  !(ip.String()=="127.0.0.1")){
+				println("Now listening on interface:"+i.Name+" on: http://" + ip.String() + ":" + port)
+			}
+		}
 	}
 }
 
